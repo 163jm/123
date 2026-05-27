@@ -505,6 +505,12 @@ impl ClashApi {
                     (&c.listen, c.listen_port)
                 }
                 IB::Dns(_) | IB::Tun(_) => continue,
+                IB::Vless(_)
+                | IB::Vmess(_)
+                | IB::Trojan(_)
+                | IB::Shadowsocks(_)
+                | IB::Hysteria2(_)
+                | IB::Tuic(_) => continue,
             };
             let _ = port;
             // 绑定 0.0.0.0 或 :: 意味着允许局域网

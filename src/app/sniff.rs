@@ -97,7 +97,7 @@ pub async fn sniff(
 
     let mut buf = vec![0u8; PEEK_BUF_SIZE];
 
-    let n = match tokio::time::timeout(timeout, stream.inner.read(&mut buf)).await {
+    let n = match tokio::time::timeout(timeout, stream.read(&mut buf)).await {
         Ok(Ok(n)) if n > 0 => n,
         _ => return None,
     };

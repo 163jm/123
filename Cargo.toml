@@ -8,7 +8,7 @@ name = "reflex"
 path = "src/main.rs"
 
 [features]
-default = ["jemalloc"]
+default = ["jemalloc", "outbound-net"]
 jemalloc = ["dep:tikv-jemallocator"]
 outbound-net = [
     "dep:tokio-rustls", "dep:rustls", "dep:rustls-native-certs",
