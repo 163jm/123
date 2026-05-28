@@ -7,11 +7,11 @@
 //! 协议参考：https://xtls.github.io/development/protocols/vless.html
 //!
 //! 请求头格式（Version 0）：
-//! ```
+//! ```text
 //! [Ver=0x00 1B][UUID 16B][Addon Len 1B][Addon ...][Cmd 1B][Port 2B BE][Atyp 1B][Addr ...][Payload]
 //! ```
 //! 响应头格式：
-//! ```
+//! ```text
 //! [Ver=0x00 1B][Addon Len 1B][Addon ...]
 //! ```
 
