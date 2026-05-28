@@ -110,7 +110,7 @@ async fn handle_quic_conn(
     peer: SocketAddr,
     passwords: Arc<Vec<String>>,
     tcp_tx: mpsc::Sender<InboundTcpStream>,
-    udp_tx: mpsc::Sender<InboundUdpPacket>,
+    _udp_tx: mpsc::Sender<InboundUdpPacket>,
     tag: &str,
 ) -> anyhow::Result<()> {
     // Hysteria2 使用 HTTP/3 协议进行认证和代理请求
