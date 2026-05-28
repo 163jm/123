@@ -334,6 +334,7 @@ fn write_target(buf: &mut BytesMut, target: &Target) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_udp_datagram(
     uuid: &[u8; 16],
     token: &[u8; 32],

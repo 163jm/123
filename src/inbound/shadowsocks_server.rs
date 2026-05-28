@@ -13,7 +13,6 @@ use std::{
 };
 
 use base64::Engine;
-use tokio::io::AsyncReadExt;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc,
@@ -44,7 +43,7 @@ impl ShadowsocksInbound {
         let tag = Arc::new(self.config.tag.clone());
 
         // 解析密钥
-        let method = SsMethod::from_str(&self.config.method)?;
+        let method = SsMethod::parse(&self.config.method)?;
         let password = self
             .config
             .password
@@ -70,7 +69,6 @@ impl ShadowsocksInbound {
             let tcp_tx = self.tcp_tx.clone();
             let tag = tag.clone();
             let key = key.clone();
-            let method = method;
 
             tokio::spawn(async move {
                 if let Err(e) = handle_conn(stream, peer, key, method, tcp_tx, &tag).await {
@@ -181,7 +179,7 @@ pub enum SsMethod {
 }
 
 impl SsMethod {
-    pub fn from_str(s: &str) -> anyhow::Result<Self> {
+    pub fn parse(s: &str) -> anyhow::Result<Self> {
         Ok(match s.to_ascii_lowercase().as_str() {
             "aes-128-gcm" => Self::Aes128Gcm,
             "aes-256-gcm" => Self::Aes256Gcm,
@@ -366,6 +364,7 @@ impl AeadDecryptor {
 
 // ── AEAD Encryptor ────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 struct AeadEncryptor {
     salt: Vec<u8>,
     session_key: Vec<u8>,
@@ -383,9 +382,10 @@ impl AeadEncryptor {
 // ── SsServerStream：解密入/加密出的全双工流 ───────────────────────────────────
 
 use std::{io, pin::Pin, task::{Context, Poll}};
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::BytesMut;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
+#[allow(dead_code)]
 struct SsServerStream {
     inner: TcpStream,
     method: SsMethod,
@@ -417,13 +417,13 @@ impl SsServerStream {
 impl AsyncRead for SsServerStream {
     fn poll_read(self: Pin<&mut Self>, _cx: &mut Context<'_>, _buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
         // TODO: 实现 SS 解密读取
-        Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, "SsServerStream: async decrypt not fully implemented; use direct relay")))
+        Poll::Ready(Err(io::Error::other("SsServerStream: async decrypt not fully implemented; use direct relay")))
     }
 }
 
 impl AsyncWrite for SsServerStream {
     fn poll_write(self: Pin<&mut Self>, _cx: &mut Context<'_>, _data: &[u8]) -> Poll<io::Result<usize>> {
-        Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, "SsServerStream: async encrypt not fully implemented")))
+        Poll::Ready(Err(io::Error::other("SsServerStream: async encrypt not fully implemented")))
     }
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Poll::Ready(Ok(()))
@@ -445,7 +445,6 @@ async fn read_socks5_addr<S: tokio::io::AsyncReadExt + Unpin>(
 fn read_socks5_addr_from_cursor(
     cur: &mut std::io::Cursor<Vec<u8>>,
 ) -> anyhow::Result<Target> {
-    use std::io::Read;
     let mut atyp = [0u8; 1];
     std::io::Read::read_exact(cur, &mut atyp)?;
     match atyp[0] {

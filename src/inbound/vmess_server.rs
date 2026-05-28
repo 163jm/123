@@ -17,7 +17,7 @@ use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc,
 };
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use crate::{
     config::inbound::VmessInboundConfig,
@@ -155,13 +155,8 @@ async fn process_vmess_and_relay<S>(
     mut stream: S,
     peer: SocketAddr,
     users: &[[u8; 16]],
-    tcp_tx: mpsc::Sender<InboundTcpStream>,
-    tag: &str,
-) -> anyhow::Result<()>
-where
-    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
-{
-    let (target, resp_key, resp_iv, resp_v) =
+    _tcp_tx: mpsc::Sender<InboundTcpStream>,
+    _tag: &str,
         decode_vmess_header(&mut stream, users).await?;
     send_vmess_response(&mut stream, &resp_key, &resp_iv, resp_v).await?;
 
@@ -199,8 +194,6 @@ async fn decode_vmess_header<S: tokio::io::AsyncReadExt + Unpin>(
     users: &[[u8; 16]],
 ) -> anyhow::Result<(Target, [u8; 16], [u8; 16], u8)> {
     use aes_gcm::{aead::{AeadInPlace, KeyInit}, Aes128Gcm};
-    use hmac::{Hmac, Mac};
-    use sha2::Sha256;
 
     // ── 读取 Auth ID (16B)，并匹配用户 ───────────────────────────────────────
     let mut auth_id = [0u8; 16];
@@ -285,22 +278,22 @@ async fn decode_vmess_header<S: tokio::io::AsyncReadExt + Unpin>(
 
     let target = match atyp {
         0x01 => {
-            let ip = Ipv4Addr::new(h[pos], h[pos+1], h[pos+2], h[pos+3]); pos += 4;
+            let ip = Ipv4Addr::new(h[pos], h[pos+1], h[pos+2], h[pos+3]); pos += 4; let _ = pos;
             Target::Socket(SocketAddr::new(IpAddr::V4(ip), port))
         }
         0x02 => {
             let dlen = h[pos] as usize; pos += 1;
-            let domain = String::from_utf8(h[pos..pos+dlen].to_vec())?; pos += dlen;
+            let domain = String::from_utf8(h[pos..pos+dlen].to_vec())?; pos += dlen; let _ = pos;
             Target::Domain(domain, port)
         }
         0x03 => {
-            let ip_bytes: [u8; 16] = h[pos..pos+16].try_into()?; pos += 16;
+            let ip_bytes: [u8; 16] = h[pos..pos+16].try_into()?; pos += 16; let _ = pos;
             Target::Socket(SocketAddr::new(IpAddr::V6(Ipv6Addr::from(ip_bytes)), port))
         }
         other => anyhow::bail!("vmess: unknown atyp 0x{other:02x}"),
     };
 
-    pos += padding_len; // skip padding
+    let _ = pos + padding_len; // skip padding
     // last 4 bytes = FNV checksum (skip validation for now)
 
     // 计算响应密钥和 IV：response_key = MD5(data_key), response_iv = MD5(data_iv)

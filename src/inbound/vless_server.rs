@@ -201,13 +201,8 @@ async fn process_and_relay_vless<S>(
     mut stream: S,
     peer: SocketAddr,
     users: &[[u8; 16]],
-    tcp_tx: mpsc::Sender<InboundTcpStream>,
-    tag: &str,
-) -> anyhow::Result<()>
-where
-    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
-{
-    let target = decode_vless_header(&mut stream, users).await?;
+    _tcp_tx: mpsc::Sender<InboundTcpStream>,
+    _tag: &str,
 
     // 发送响应头
     stream.write_all(&[0x00, 0x00]).await?;
@@ -307,6 +302,7 @@ where
     use tokio_tungstenite::{accept_hdr_async, tungstenite::handshake::server::{Request, Response}};
 
     let path_owned = path.to_string();
+    #[allow(clippy::result_large_err)]
     let ws = accept_hdr_async(stream, |req: &Request, res: Response| {
         if req.uri().path() == path_owned {
             Ok(res)
@@ -335,8 +331,7 @@ pub struct WsStream<S>(WebSocketStream<S>);
 #[cfg(feature = "outbound-net")]
 impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncRead for WsStream<S> {
     fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
-        use bytes::Buf;
-        use futures_util::{Stream, StreamExt};
+        use futures_util::Stream;
         loop {
             match Pin::new(&mut self.0).poll_next(cx) {
                 Poll::Pending => return Poll::Pending,
@@ -347,7 +342,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncRead for WsStream<S> {
                     return Poll::Ready(Ok(()));
                 }
                 Poll::Ready(Some(Ok(_))) => continue,
-                Poll::Ready(Some(Err(e))) => return Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e))),
+                Poll::Ready(Some(Err(e))) => return Poll::Ready(Err(io::Error::other(e))),
             }
         }
     }
@@ -356,24 +351,24 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncRead for WsStream<S> {
 #[cfg(feature = "outbound-net")]
 impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncWrite for WsStream<S> {
     fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, data: &[u8]) -> Poll<io::Result<usize>> {
-        use futures_util::{Sink, SinkExt};
+        use futures_util::Sink;
         match Pin::new(&mut self.0).poll_ready(cx) {
             Poll::Pending => return Poll::Pending,
-            Poll::Ready(Err(e)) => return Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e))),
+            Poll::Ready(Err(e)) => return Poll::Ready(Err(io::Error::other(e))),
             Poll::Ready(Ok(())) => {}
         }
-        let msg = Message::Binary(data.to_vec().into());
+        let msg = Message::Binary(data.to_vec());
         match Pin::new(&mut self.0).start_send(msg) {
             Ok(()) => Poll::Ready(Ok(data.len())),
-            Err(e) => Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e))),
+            Err(e) => Poll::Ready(Err(io::Error::other(e))),
         }
     }
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         use futures_util::Sink;
-        Pin::new(&mut self.0).poll_flush(cx).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+        Pin::new(&mut self.0).poll_flush(cx).map_err(io::Error::other)
     }
     fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         use futures_util::Sink;
-        Pin::new(&mut self.0).poll_close(cx).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+        Pin::new(&mut self.0).poll_close(cx).map_err(io::Error::other)
     }
 }

@@ -10,7 +10,7 @@ use std::{
 };
 
 use tokio::sync::mpsc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 use uuid::Uuid;
 
 use crate::{
@@ -132,8 +132,8 @@ async fn handle_tuic_conn(
     peer: SocketAddr,
     users: Arc<HashMap<[u8; 16], Vec<u8>>>,
     tcp_tx: mpsc::Sender<InboundTcpStream>,
-    udp_tx: mpsc::Sender<InboundUdpPacket>,
-    tag: &str,
+    _udp_tx: mpsc::Sender<InboundUdpPacket>,
+    _tag: &str,
 ) -> anyhow::Result<()> {
     use tokio::io::AsyncReadExt;
 
@@ -142,7 +142,6 @@ async fn handle_tuic_conn(
     // 代理命令通过双向流（bi-directional）
 
     let mut authenticated = false;
-    let mut uuid_bytes: Option<[u8; 16]> = None;
 
     // 等待认证单向流
     let recv_stream = conn.accept_uni().await?;
@@ -165,9 +164,8 @@ async fn handle_tuic_conn(
 
     // 验证 token = HMAC-SHA256(password, uuid)
     if let Some(expected_token) = users.get(&uuid) {
-        if expected_token.as_slice() == &token {
+        if expected_token.as_slice() == token {
             authenticated = true;
-            uuid_bytes = Some(uuid);
         }
     }
 
@@ -176,7 +174,7 @@ async fn handle_tuic_conn(
 
     // 处理代理请求
     loop {
-        let (send_stream, mut recv_stream) = match conn.accept_bi().await {
+        let (send_stream, recv_stream) = match conn.accept_bi().await {
             Ok(s) => s,
             Err(quinn::ConnectionError::ApplicationClosed { .. }) => break,
             Err(e) => return Err(e.into()),

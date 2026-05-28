@@ -130,7 +130,7 @@ impl VlessOutbound {
         let server = &self.config.server;
         let port = self.config.server_port;
         let sni = self.tls_sni();
-        let tls_enabled = self.config.tls.as_ref().map_or(false, |t| t.enabled);
+        let tls_enabled = self.config.tls.as_ref().is_some_and(|t| t.enabled);
 
         let addr: SocketAddr = tokio::net::lookup_host(format!("{server}:{port}"))
             .await?
@@ -497,7 +497,7 @@ where
         data: &[u8],
     ) -> Poll<std::io::Result<usize>> {
         let mut this = self.project();
-        if let Poll::Pending = this.inner.as_mut().poll_ready(cx).map_err(ws_err)? {
+        if this.inner.as_mut().poll_ready(cx).map_err(ws_err)?.is_pending() {
             return Poll::Pending;
         }
         let payload = if let Some(header) = this.pending_header.take() {

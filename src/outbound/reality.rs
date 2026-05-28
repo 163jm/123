@@ -171,7 +171,7 @@ pub fn decode_short_id(s: &str) -> anyhow::Result<Vec<u8>> {
         return Ok(vec![]);
     }
     anyhow::ensure!(
-        s.len() % 2 == 0 && s.len() <= 16,
+        s.len().is_multiple_of(2) && s.len() <= 16,
         "shortId must be 0~16 hex chars (even), got '{s}'"
     );
     hex::decode(s).map_err(|e| anyhow::anyhow!("shortId decode: {e}"))

@@ -171,7 +171,7 @@ impl AeadCipher {
         Ok(())
     }
 
-    fn seal_inner(&self, buf: &mut Vec<u8>, nonce: &[u8; 12]) -> anyhow::Result<[u8; TAG_LEN]> {
+    fn seal_inner(&self, buf: &mut [u8], nonce: &[u8; 12]) -> anyhow::Result<[u8; TAG_LEN]> {
         macro_rules! do_seal {
             ($C:ty) => {{
                 let c = <$C>::new_from_slice(&self.subkey)

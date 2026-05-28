@@ -171,13 +171,8 @@ impl RequestHeader {
 
         // option 与 sing-vmess/client.go dialRaw() 保持一致
         let option = match security {
-            SECURITY_NONE => {
-                if command == CMD_UDP {
-                    OPT_CHUNK_STREAM
-                } else {
-                    0
-                }
-            }
+            SECURITY_NONE if command == CMD_UDP => OPT_CHUNK_STREAM,
+            SECURITY_NONE => 0,
             SECURITY_AES128_GCM | SECURITY_CHACHA20_POLY1305 => {
                 OPT_CHUNK_STREAM | OPT_CHUNK_MASKING
             }

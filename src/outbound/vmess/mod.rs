@@ -367,7 +367,7 @@ where
         data: &[u8],
     ) -> Poll<std::io::Result<usize>> {
         let mut this = self.project();
-        if let Poll::Pending = this.inner.as_mut().poll_ready(cx).map_err(ws_err)? {
+        if this.inner.as_mut().poll_ready(cx).map_err(ws_err)?.is_pending() {
             return Poll::Pending;
         }
         let len = data.len();

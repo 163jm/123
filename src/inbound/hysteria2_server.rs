@@ -8,10 +8,10 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use tokio::sync::mpsc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 
 use crate::{
-    config::inbound::{Hysteria2InboundConfig, Hysteria2User},
+    config::inbound::Hysteria2InboundConfig,
     inbound::{InboundTcpStream, InboundUdpPacket, Target},
 };
 
@@ -142,7 +142,7 @@ async fn handle_quic_conn(
 
 #[cfg(feature = "outbound-net")]
 async fn handle_hy2_stream(
-    mut send: quinn::SendStream,
+    send: quinn::SendStream,
     mut recv: quinn::RecvStream,
     peer: SocketAddr,
     passwords: Arc<Vec<String>>,

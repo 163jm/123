@@ -11,11 +11,11 @@ use std::{
 
 use sha2::{Digest, Sha224};
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncReadExt,
     net::{TcpListener, TcpStream},
     sync::mpsc,
 };
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use crate::{
     config::inbound::TrojanInboundConfig,
@@ -149,8 +149,8 @@ async fn process_and_relay_trojan<S>(
     mut stream: S,
     peer: SocketAddr,
     hashed_passwords: &[Vec<u8>],
-    tcp_tx: mpsc::Sender<InboundTcpStream>,
-    tag: &str,
+    _tcp_tx: mpsc::Sender<InboundTcpStream>,
+    _tag: &str,
 ) -> anyhow::Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
@@ -193,7 +193,7 @@ async fn decode_trojan_header<S: AsyncReadExt + Unpin>(
     // 验证密码
     let authed = hashed_passwords
         .iter()
-        .any(|hp| hp.as_slice() == &password_hex);
+        .any(|hp| hp.as_slice() == password_hex);
     anyhow::ensure!(authed, "trojan: unauthorized password");
 
     // CRLF

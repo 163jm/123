@@ -71,7 +71,7 @@ pub async fn connect(
     extra_headers: &HashMap<String, String>,
     routing_mark: u32,
 ) -> anyhow::Result<XhttpStream> {
-    let tls_enabled = tls.map_or(false, |t| t.enabled);
+    let tls_enabled = tls.is_some_and(|t| t.enabled);
     let scheme = if tls_enabled { "https" } else { "http" };
 
     let host = cfg
@@ -155,7 +155,7 @@ impl MarkedConnector {
 pub enum MaybeHttps {
     Plain(TcpStream),
     #[cfg(feature = "outbound-net")]
-    Tls(tokio_rustls::client::TlsStream<TcpStream>),
+    Tls(Box<tokio_rustls::client::TlsStream<TcpStream>>),
 }
 
 impl tokio::io::AsyncRead for MaybeHttps {
@@ -290,7 +290,7 @@ impl Service<Uri> for MarkedConnector {
                     .connect(sni, tcp)
                     .await
                     .map_err(|e| anyhow::anyhow!("xhttp: TLS handshake failed: {e}"))?;
-                return Ok(MaybeHttps::Tls(tls_stream));
+                return Ok(MaybeHttps::Tls(Box::new(tls_stream)));
             }
 
             Ok(MaybeHttps::Plain(tcp))
@@ -302,18 +302,18 @@ impl Service<Uri> for MarkedConnector {
 
 type XhttpClient = Client<MarkedConnector, XhttpBody>;
 
+type XhttpStreamBody = StreamBody<
+    futures_util::stream::Map<
+        ReceiverStream<Bytes>,
+        fn(Bytes) -> Result<Frame<Bytes>, io::Error>,
+    >,
+>;
+
 /// 上行 body 类型：可以是空 body、固定字节、或流式 channel
 enum XhttpBody {
     Empty(Empty<Bytes>),
     Full(Full<Bytes>),
-    Stream(
-        StreamBody<
-            futures_util::stream::Map<
-                ReceiverStream<Bytes>,
-                fn(Bytes) -> Result<Frame<Bytes>, io::Error>,
-            >,
-        >,
-    ),
+    Stream(XhttpStreamBody),
 }
 
 impl hyper::body::Body for XhttpBody {
@@ -640,7 +640,7 @@ fn build_http_client(
     _cfg: &XhttpTransportConfig,
     routing_mark: u32,
 ) -> anyhow::Result<XhttpClient> {
-    let tls_enabled = tls.map_or(false, |t| t.enabled);
+    let tls_enabled = tls.is_some_and(|t| t.enabled);
 
     #[cfg(feature = "outbound-net")]
     let rustls_cfg: Option<Arc<rustls::ClientConfig>> = if tls_enabled {

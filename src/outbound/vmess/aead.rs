@@ -30,7 +30,7 @@ use super::frame::{OPT_CHUNK_MASKING, OPT_CHUNK_STREAM, SECURITY_AES128_GCM, SEC
 // ── 枚举：支持的 AEAD 算法 ───────────────────────────────────────────────────
 
 enum VmessAeadCipher {
-    Aes128Gcm(Aes128Gcm),
+    Aes128Gcm(Box<Aes128Gcm>),
     Chacha20Poly1305(ChaCha20Poly1305),
 }
 
@@ -39,7 +39,7 @@ impl VmessAeadCipher {
         use super::frame::SECURITY_CHACHA20_POLY1305;
         match security {
             SECURITY_AES128_GCM => {
-                VmessAeadCipher::Aes128Gcm(Aes128Gcm::new_from_slice(key).expect("aes key"))
+                VmessAeadCipher::Aes128Gcm(Box::new(Aes128Gcm::new_from_slice(key).expect("aes key")))
             }
             SECURITY_CHACHA20_POLY1305 => {
                 let full_key = chacha20_key(key);
@@ -73,7 +73,7 @@ impl VmessAeadCipher {
 fn chacha20_key(key: &[u8]) -> [u8; 32] {
     use md5::{Digest, Md5};
     let h1: [u8; 16] = Md5::digest(key).into();
-    let h2: [u8; 16] = Md5::digest(&h1).into();
+    let h2: [u8; 16] = Md5::digest(h1).into();
     let mut out = [0u8; 32];
     out[..16].copy_from_slice(&h1);
     out[16..].copy_from_slice(&h2);
@@ -171,7 +171,7 @@ impl VmessEncoder {
             .as_ref()
             .unwrap()
             .encrypt(&nonce, plaintext)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("vmess encrypt: {e:?}")))?;
+            .map_err(|e| io::Error::other(format!("vmess encrypt: {e:?}")))?;
         let mut chunk_len = ct.len() as u16;
         if let Some(ref mut m) = self.masking {
             chunk_len ^= next_mask_u16(m.as_mut());
