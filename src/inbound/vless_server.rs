@@ -203,6 +203,11 @@ async fn process_and_relay_vless<S>(
     users: &[[u8; 16]],
     _tcp_tx: mpsc::Sender<InboundTcpStream>,
     _tag: &str,
+) -> anyhow::Result<()>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
+    let target = decode_vless_header(&mut stream, users).await?;
 
     // 发送响应头
     stream.write_all(&[0x00, 0x00]).await?;
