@@ -64,12 +64,13 @@ impl TuicInbound {
         server_tls.alpn_protocols = vec![b"tuic".to_vec()];
         let server_tls = Arc::new(server_tls);
 
-        let mut quic_cfg = ServerConfig::with_crypto(server_tls);
+        let quic_server_tls = quinn::crypto::rustls::QuicServerConfig::try_from(server_tls)?;
+        let mut quic_cfg = ServerConfig::with_crypto(Arc::new(quic_server_tls));
 
         // 配置零 RTT（如果启用）
         if self.config.zero_rtt_handshake {
             Arc::get_mut(&mut quic_cfg.transport)
-                .map(|t| t.max_early_data_size(u32::MAX));
+                .map(|t| t.max_idle_timeout(None));
         }
 
         let endpoint = Endpoint::server(quic_cfg, bind)?;

@@ -336,7 +336,7 @@ pub struct WsStream<S>(WebSocketStream<S>);
 impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncRead for WsStream<S> {
     fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
         use bytes::Buf;
-        use futures_util::StreamExt;
+        use futures_util::{Stream, StreamExt};
         loop {
             match Pin::new(&mut self.0).poll_next(cx) {
                 Poll::Pending => return Poll::Pending,
@@ -356,7 +356,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncRead for WsStream<S> {
 #[cfg(feature = "outbound-net")]
 impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncWrite for WsStream<S> {
     fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, data: &[u8]) -> Poll<io::Result<usize>> {
-        use futures_util::SinkExt;
+        use futures_util::{Sink, SinkExt};
         match Pin::new(&mut self.0).poll_ready(cx) {
             Poll::Pending => return Poll::Pending,
             Poll::Ready(Err(e)) => return Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e))),
@@ -369,11 +369,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> AsyncWrite for WsStream<S> {
         }
     }
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        use futures_util::SinkExt;
+        use futures_util::Sink;
         Pin::new(&mut self.0).poll_flush(cx).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
     }
     fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        use futures_util::SinkExt;
+        use futures_util::Sink;
         Pin::new(&mut self.0).poll_close(cx).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
     }
 }

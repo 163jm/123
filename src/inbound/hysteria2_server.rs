@@ -64,7 +64,8 @@ impl Hysteria2Inbound {
         server_tls.alpn_protocols = vec![b"h3".to_vec()];
         let server_tls = Arc::new(server_tls);
 
-        let quic_cfg = ServerConfig::with_crypto(server_tls);
+        let quic_server_tls = quinn::crypto::rustls::QuicServerConfig::try_from(server_tls)?;
+        let quic_cfg = ServerConfig::with_crypto(Arc::new(quic_server_tls));
         let endpoint = Endpoint::server(quic_cfg, bind)?;
 
         info!(tag = %tag, addr = %bind, "hysteria2 inbound: QUIC endpoint ready");

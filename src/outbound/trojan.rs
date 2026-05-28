@@ -613,7 +613,7 @@ mod tests {
             server: "example.com".into(),
             server_port: 443,
             password: "password".into(),
-            transport: TrojanTransportConfig::Tcp(TrojanTcpConfig::default()),
+            transport: Some(TrojanTransportConfig::Tcp(TrojanTcpConfig::default())),
             tls: TlsConfig::default(),
             detour: None,
         };
@@ -642,7 +642,7 @@ mod tests {
             server: "example.com".into(),
             server_port: 443,
             password: "pass".into(),
-            transport: TrojanTransportConfig::Tcp(TrojanTcpConfig::default()),
+            transport: Some(TrojanTransportConfig::Tcp(TrojanTcpConfig::default())),
             tls: TlsConfig::default(),
             detour: None,
         };

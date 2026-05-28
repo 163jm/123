@@ -242,6 +242,7 @@ impl AsyncRead for Hy2DynStream {
 impl AsyncWrite for Hy2DynStream {
     fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, data: &[u8]) -> Poll<io::Result<usize>> {
         Pin::new(&mut self.0.send).poll_write(cx, data)
+            .map_err(|e| io::Error::new(io::ErrorKind::BrokenPipe, e))
     }
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Poll::Ready(Ok(()))
@@ -265,6 +266,7 @@ impl AsyncRead for TuicDynStream {
 impl AsyncWrite for TuicDynStream {
     fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, data: &[u8]) -> Poll<io::Result<usize>> {
         Pin::new(&mut self.0.send).poll_write(cx, data)
+            .map_err(|e| io::Error::new(io::ErrorKind::BrokenPipe, e))
     }
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Poll::Ready(Ok(()))

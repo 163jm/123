@@ -447,32 +447,32 @@ fn read_socks5_addr_from_cursor(
 ) -> anyhow::Result<Target> {
     use std::io::Read;
     let mut atyp = [0u8; 1];
-    cur.read_exact(&mut atyp)?;
+    std::io::Read::read_exact(cur, &mut atyp)?;
     match atyp[0] {
         0x01 => {
             let mut ip = [0u8; 4];
-            cur.read_exact(&mut ip)?;
+            std::io::Read::read_exact(cur, &mut ip)?;
             let mut port_buf = [0u8; 2];
-            cur.read_exact(&mut port_buf)?;
+            std::io::Read::read_exact(cur, &mut port_buf)?;
             let port = u16::from_be_bytes(port_buf);
             Ok(Target::Socket(SocketAddr::new(IpAddr::V4(Ipv4Addr::from(ip)), port)))
         }
         0x03 => {
             let mut dlen_buf = [0u8; 1];
-            cur.read_exact(&mut dlen_buf)?;
+            std::io::Read::read_exact(cur, &mut dlen_buf)?;
             let dlen = dlen_buf[0] as usize;
             let mut domain = vec![0u8; dlen];
-            cur.read_exact(&mut domain)?;
+            std::io::Read::read_exact(cur, &mut domain)?;
             let mut port_buf = [0u8; 2];
-            cur.read_exact(&mut port_buf)?;
+            std::io::Read::read_exact(cur, &mut port_buf)?;
             let port = u16::from_be_bytes(port_buf);
             Ok(Target::Domain(String::from_utf8(domain)?, port))
         }
         0x04 => {
             let mut ip = [0u8; 16];
-            cur.read_exact(&mut ip)?;
+            std::io::Read::read_exact(cur, &mut ip)?;
             let mut port_buf = [0u8; 2];
-            cur.read_exact(&mut port_buf)?;
+            std::io::Read::read_exact(cur, &mut port_buf)?;
             let port = u16::from_be_bytes(port_buf);
             Ok(Target::Socket(SocketAddr::new(IpAddr::V6(Ipv6Addr::from(ip)), port)))
         }
