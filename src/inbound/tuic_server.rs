@@ -133,7 +133,7 @@ async fn handle_tuic_conn(
     users: Arc<HashMap<[u8; 16], Vec<u8>>>,
     tcp_tx: mpsc::Sender<InboundTcpStream>,
     _udp_tx: mpsc::Sender<InboundUdpPacket>,
-    _tag: &str,
+    tag: &str,
 ) -> anyhow::Result<()> {
     use tokio::io::AsyncReadExt;
 
