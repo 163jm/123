@@ -596,18 +596,18 @@ mod tests {
 
     #[test]
     fn derive_key_known_vector() {
-        // 与 sing-box transport/trojan/protocol.go 的 Key() 函数对齐：
-        // SHA-224("password") hex = "d9014c4624844aa5bac314773d6b689ad467fa4e1d1a50a1b8a99d5a3"
+        // SHA-224("password") hex = "d63dc919e201d7bc4c825630d2cf25fdc93d4b2f0d46706d29038d01"
         let key = derive_key("password");
         let hex = std::str::from_utf8(&key).unwrap();
-        // 只验证前 8 个字符
-        assert!(hex.starts_with("d9014c46"), "unexpected key prefix: {hex}");
+        // 验证前 8 个字符
+        assert!(hex.starts_with("d63dc919"), "unexpected key prefix: {hex}");
         assert_eq!(key.len(), 56);
     }
 
     #[test]
     fn build_tcp_header_domain() {
         use crate::config::outbound::{TlsConfig, TrojanTcpConfig, TrojanTransportConfig};
+        let _ = rustls::crypto::ring::default_provider().install_default();
         let cfg = TrojanOutboundConfig {
             tag: "test".into(),
             server: "example.com".into(),
@@ -637,6 +637,7 @@ mod tests {
     fn build_tcp_header_ipv4() {
         use crate::config::outbound::{TlsConfig, TrojanTcpConfig, TrojanTransportConfig};
         use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+        let _ = rustls::crypto::ring::default_provider().install_default();
         let cfg = TrojanOutboundConfig {
             tag: "test".into(),
             server: "example.com".into(),
