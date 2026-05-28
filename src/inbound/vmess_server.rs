@@ -157,6 +157,11 @@ async fn process_vmess_and_relay<S>(
     users: &[[u8; 16]],
     _tcp_tx: mpsc::Sender<InboundTcpStream>,
     _tag: &str,
+) -> anyhow::Result<()>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
+    let (target, resp_key, resp_iv, resp_v) =
         decode_vmess_header(&mut stream, users).await?;
     send_vmess_response(&mut stream, &resp_key, &resp_iv, resp_v).await?;
 
